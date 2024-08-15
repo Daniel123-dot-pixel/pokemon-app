@@ -221,9 +221,9 @@ class PokemonComponent extends LitElement {
   render() {
     return html`
       <div class="filter-controls">
-        <label for="filter-select">Filter:</label>
+        <label for="filter-select">Filtro:</label>
         <select id="filter-select" @change="${this.handleFilterChange}">
-          <option value="">Select Filter</option>
+          <option value="">Selecciona un filtro</option>
           <option value="type">Tipo</option>
           <option value="name">Nombre</option>
           <option value="sort">Alfabéticamente</option>
