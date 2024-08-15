@@ -110,11 +110,11 @@ class PokemonComponent extends LitElement {
       this.error = 'Error al cargar los tipos de Pokemones.';
     }
   }
-
+  //Búsqueda asíncorna de pokemones
   async fetchPokemons() {
     try {
       this.loading = true;
-      const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=152');
+      const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=151');
       const data = await response.json();
       this.pokemons = data.results;
   
@@ -131,7 +131,7 @@ class PokemonComponent extends LitElement {
       this.loading = false;
     }
   }
-
+  //Aplicación de filtros
   applyFilters() {
     let filtered = this.pokemons;
 
@@ -164,7 +164,7 @@ class PokemonComponent extends LitElement {
     }
     this.showModal = true;
   }
-
+  //Búsqueda asíncrone de Evoluciones por nombre de pokemon
   async fetchEvolutions(pokemonName) {
     try {
       const pokemon = this.pokemons.find(p => p.name === pokemonName);

@@ -48,19 +48,19 @@ class PokemonModal extends LitElement {
           <h2>${this.pokemon.name}</h2>
           <img src="${this.pokemon.sprites.front_default}" alt="${this.pokemon.name}" />
           <div>
-            <h3>Types:</h3>
+            <h3>Tipo:</h3>
             <ul>
               ${this.pokemon.types.map(type => html`<li>${type.type.name}</li>`)}
             </ul>
           </div>
           <div>
-            <h3>Abilities:</h3>
+            <h3>Habilidades:</h3>
             <ul>
               ${this.pokemon.abilities.map(ability => html`<li>${ability.ability.name}</li>`)}
             </ul>
           </div>
           <div>
-            <h3>Stats:</h3>
+            <h3>Estadísiticas:</h3>
             <ul>
               ${this.pokemon.stats.map(stat => html`
                 <li>${stat.stat.name}: ${stat.base_stat}</li>
