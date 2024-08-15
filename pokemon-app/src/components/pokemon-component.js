@@ -31,6 +31,8 @@ class PokemonComponent extends LitElement {
       z-index: 1000;
       width: 80%;
       max-width: 500px;
+      color: #333;
+      border: 2px solid gold;
     }
 
     .modal-overlay {
@@ -45,6 +47,11 @@ class PokemonComponent extends LitElement {
 
     .modal h3 {
       margin-top: 0;
+      color: #007bff;
+    }
+    
+    .modal p, .modal li {
+      color: #555; 
     }
 
     .close-btn {
@@ -69,7 +76,7 @@ class PokemonComponent extends LitElement {
     error: { type: String },
     showModal: { type: Boolean },
     selectedPokemonEvolutions: { type: Array },
-    selectedPokemonName: { type: String },
+    selectedPokemon: { type: Object }, 
   };
 
   constructor() {
@@ -84,7 +91,7 @@ class PokemonComponent extends LitElement {
     this.error = '';
     this.showModal = false;
     this.selectedPokemonEvolutions = [];
-    this.selectedPokemonName = '';
+    this.selectedPokemon = null; 
   }
 
   connectedCallback() {
@@ -109,20 +116,14 @@ class PokemonComponent extends LitElement {
       this.loading = true;
       const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=152');
       const data = await response.json();
-      
-      const pokemonDetailsPromises = data.results.map(pokemon =>
+      this.pokemons = data.results;
+  
+      const pokemonDetailsPromises = this.pokemons.map(pokemon =>
         fetch(pokemon.url).then(res => res.json())
       );
-
-      const pokemonDetails = await Promise.all(pokemonDetailsPromises);
-      this.pokemons = pokemonDetails;
-
-      // Ensure applyFilters is defined and available
-      if (typeof this.applyFilters === 'function') {
-        this.applyFilters();
-      } else {
-        console.error('applyFilters is not a function');
-      }
+  
+      this.pokemons = await Promise.all(pokemonDetailsPromises);
+      this.applyFilters();
     } catch (error) {
       console.error('Error al obtener la lista de Pokemones:', error);
       this.error = 'Error al cargar la lista de Pokemones.';
@@ -134,30 +135,22 @@ class PokemonComponent extends LitElement {
   applyFilters() {
     let filtered = this.pokemons;
 
-    switch (this.selectedFilter) {
-      case 'type':
-        if (this.filterValue) {
-          filtered = filtered.filter(pokemon =>
-            pokemon.types.some(pokemonType => pokemonType.type.name === this.filterValue)
-          );
-        }
-        break;
-      case 'name':
-        if (this.filterValue) {
-          filtered = filtered.filter(pokemon =>
-            pokemon.name.toLowerCase().includes(this.filterValue.toLowerCase())
-          );
-        }
-        break;
-      case 'sort':
-        filtered.sort((a, b) => {
-          if (this.sortOrder === 'asc') {
-            return a.name.localeCompare(b.name);
-          } else {
-            return b.name.localeCompare(a.name);
-          }
-        });
-        break;
+    if (this.selectedFilter === 'type' && this.filterValue) {
+      filtered = filtered.filter(pokemon =>
+        pokemon.types.some(pokemonType => pokemonType.type.name === this.filterValue)
+      );
+    } else if (this.selectedFilter === 'name' && this.filterValue) {
+      filtered = filtered.filter(pokemon =>
+        pokemon.name.toLowerCase().includes(this.filterValue.toLowerCase())
+      );
+    }
+
+    if (this.selectedFilter === 'sort') {
+      filtered.sort((a, b) => {
+        return this.sortOrder === 'asc'
+          ? a.name.localeCompare(b.name)
+          : b.name.localeCompare(a.name);
+      });
     }
 
     this.filteredPokemons = filtered;
@@ -165,8 +158,10 @@ class PokemonComponent extends LitElement {
 
   async handlePokemonClick(event) {
     const pokemonName = event.detail.name;
-    this.selectedPokemonName = pokemonName;
-    await this.fetchEvolutions(pokemonName);
+    this.selectedPokemon = this.pokemons.find(pokemon => pokemon.name === pokemonName);
+    if (this.selectedPokemon) {
+      await this.fetchEvolutions(this.selectedPokemon.name);
+    }
     this.showModal = true;
   }
 
@@ -201,6 +196,7 @@ class PokemonComponent extends LitElement {
 
     return evolutions;
   }
+
   handleFilterChange(event) {
     this.selectedFilter = event.target.value;
     this.applyFilters();
@@ -219,14 +215,15 @@ class PokemonComponent extends LitElement {
 
   closeModal() {
     this.showModal = false;
+    this.selectedPokemon = null;
   }
 
   render() {
     return html`
       <div class="filter-controls">
-        <label for="filter-select">Filtros:</label>
+        <label for="filter-select">Filter:</label>
         <select id="filter-select" @change="${this.handleFilterChange}">
-          <option value="">Selecciona un filtro</option>
+          <option value="">Select Filter</option>
           <option value="type">Tipo</option>
           <option value="name">Nombre</option>
           <option value="sort">Alfabéticamente</option>
@@ -244,11 +241,11 @@ class PokemonComponent extends LitElement {
             `
           : this.selectedFilter === 'name'
           ? html`
-              <label for="name-filter">Nombre:</label>
+              <label for="name-filter">Name:</label>
               <input
                 id="name-filter"
                 type="text"
-                placeholder="Ingresa nombre..."
+                placeholder="Buscando Pokémon..."
                 @input="${this.handleValueChange}"
               />
             `
@@ -282,10 +279,20 @@ class PokemonComponent extends LitElement {
           : html`<p>No se han encontrado Pokemones con los filtros actuales.</p>`}
       </div>
 
-      ${this.showModal ? html`
+      ${this.showModal && this.selectedPokemon ? html`
         <div class="modal-overlay" @click="${this.closeModal}"></div>
         <div class="modal">
-          <h3>Evoluciones de ${this.selectedPokemonName}</h3>
+          <h3>${this.selectedPokemon.name}</h3>
+          <img src="${this.selectedPokemon.sprites.front_default}" alt="${this.selectedPokemon.name}" />
+          <p><strong>Tipos:</strong> ${this.selectedPokemon.types.map(type => type.type.name).join(', ')}</p>
+          <p><strong>Habilidades:</strong> ${this.selectedPokemon.abilities.map(ability => ability.ability.name).join(', ')}</p>
+          <p><strong>Estadísticas:</strong></p>
+          <ul>
+            ${this.selectedPokemon.stats.map(stat => html`
+              <li>${stat.stat.name}: ${stat.base_stat}</li>
+            `)}
+          </ul>
+          <h4>Evoluciones:</h4>
           <ul>
             ${this.selectedPokemonEvolutions.length > 0
               ? this.selectedPokemonEvolutions.map(evolution => html`<li>${evolution}</li>`)
