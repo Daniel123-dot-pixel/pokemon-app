@@ -3,70 +3,58 @@ import './pokemon-card.js';
 
 class PokemonComponent extends LitElement {
   static styles = css`
+    .filter-controls {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .filter-controls select, .filter-controls input {
+      padding: 8px;
+      margin-right: 8px;
+    }
+
     .pokemon-list {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
     }
-    .filter-controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+
+    .modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
       padding: 20px;
-      border-radius: 16px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    .filter-controls select, .filter-controls input {
-      padding: 10px 12px;
-      margin: 10px;
       border-radius: 12px;
-      border: 2px solid #007bff;
-      background: linear-gradient(135deg, #ffffff 0%, #e9e9f0 100%);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-      transition: box-shadow 0.3s ease, transform 0.3s ease;
-      font-size: 14px;
-      color: #333;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      width: 80%;
+      max-width: 500px;
     }
-    .filter-controls select:hover, .filter-controls input:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      transform: translateY(-3px);
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
     }
-    .filter-controls select {
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23333" d="M2 0L0 2h4z"/></svg>');
-      background-repeat: no-repeat;
-      background-position: right 10px top 50%;
-      background-size: 10px;
+
+    .modal h3 {
+      margin-top: 0;
     }
-    .filter-controls select option {
-      background: linear-gradient(135deg, #ffffff 0%, #f0f0f5 100%);
-      padding: 10px;
+
+    .close-btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 15px;
       border-radius: 8px;
-    }
-    .filter-controls select option:hover {
-      background-color: #007bff;
-      color: #fff;
-    }
-    .filter-controls label {
-      margin-right: 8px;
-      font-weight: 500;
-      color: #555;
-    }
-    .filter-controls select:focus, .filter-controls input:focus {
-      outline: none;
-      border-color: #0056b3;
-      box-shadow: 0 0 8px rgba(0, 86, 179, 0.5);
-    }
-    .filter-controls .input-group {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin: 0 10px;
+      cursor: pointer;
+      margin-top: 20px;
     }
   `;
 
@@ -79,6 +67,9 @@ class PokemonComponent extends LitElement {
     sortOrder: { type: String },
     loading: { type: Boolean },
     error: { type: String },
+    showModal: { type: Boolean },
+    selectedPokemonEvolutions: { type: Array },
+    selectedPokemonName: { type: String },
   };
 
   constructor() {
@@ -91,6 +82,9 @@ class PokemonComponent extends LitElement {
     this.sortOrder = 'asc';
     this.loading = true;
     this.error = '';
+    this.showModal = false;
+    this.selectedPokemonEvolutions = [];
+    this.selectedPokemonName = '';
   }
 
   connectedCallback() {
@@ -122,7 +116,13 @@ class PokemonComponent extends LitElement {
 
       const pokemonDetails = await Promise.all(pokemonDetailsPromises);
       this.pokemons = pokemonDetails;
-      this.applyFilters();
+
+      // Ensure applyFilters is defined and available
+      if (typeof this.applyFilters === 'function') {
+        this.applyFilters();
+      } else {
+        console.error('applyFilters is not a function');
+      }
     } catch (error) {
       console.error('Error al obtener la lista de Pokemones:', error);
       this.error = 'Error al cargar la lista de Pokemones.';
@@ -163,67 +163,87 @@ class PokemonComponent extends LitElement {
     this.filteredPokemons = filtered;
   }
 
-  handleFilterChange(event) {
-    this.selectedFilter = event.target.value;
-    this.applyFilters();
+  async handlePokemonClick(event) {
+    const pokemonName = event.detail.name;
+    this.selectedPokemonName = pokemonName;
+    await this.fetchEvolutions(pokemonName);
+    this.showModal = true;
   }
 
-  handleValueChange(event) {
-    this.filterValue = event.target.value;
-    this.applyFilters();
+  async fetchEvolutions(pokemonName) {
+    try {
+      const pokemon = this.pokemons.find(p => p.name === pokemonName);
+      if (!pokemon) {
+        throw new Error('Pokémon no encontrado');
+      }
+
+      const speciesResponse = await fetch(pokemon.species.url);
+      const speciesData = await speciesResponse.json();
+      const evolutionChainUrl = speciesData.evolution_chain.url;
+      const evolutionResponse = await fetch(evolutionChainUrl);
+      const evolutionData = await evolutionResponse.json();
+
+      this.selectedPokemonEvolutions = this.parseEvolutions(evolutionData.chain);
+    } catch (error) {
+      console.error('Error al obtener evoluciones:', error);
+      this.selectedPokemonEvolutions = [];
+    }
   }
 
-  handleSortChange(event) {
-    this.sortOrder = event.target.value;
-    this.applyFilters();
+  parseEvolutions(chain) {
+    const evolutions = [];
+    let currentStage = chain;
+
+    do {
+      evolutions.push(currentStage.species.name);
+      currentStage = currentStage.evolves_to[0];
+    } while (currentStage);
+
+    return evolutions;
+  }
+
+  closeModal() {
+    this.showModal = false;
   }
 
   render() {
     return html`
       <div class="filter-controls">
-        <div class="input-group">
-          <label for="filter-select">Filtro:</label>
-          <select id="filter-select" @change="${this.handleFilterChange}">
-            <option value="">Seleccionar filtro</option>
-            <option value="type">Tipo</option>
-            <option value="name">Nombre</option>
-            <option value="sort">Alfabéticamente</option>
-          </select>
-        </div>
+        <label for="filter-select">Filter:</label>
+        <select id="filter-select" @change="${this.handleFilterChange}">
+          <option value="">Select Filter</option>
+          <option value="type">Tipo</option>
+          <option value="name">Nombre</option>
+          <option value="sort">Alfabéticamente</option>
+        </select>
 
         ${this.selectedFilter === 'type'
           ? html`
-              <div class="input-group">
-                <label for="type-filter">Tipo:</label>
-                <select id="type-filter" @change="${this.handleValueChange}">
-                  <option value="">Todos los Tipos</option>
-                  ${this.types.map(
-                    (type) => html`<option value="${type.name}">${type.name}</option>`
-                  )}
-                </select>
-              </div>
+              <label for="type-filter">Type:</label>
+              <select id="type-filter" @change="${this.handleValueChange}">
+                <option value="">Todos los Tipos</option>
+                ${this.types.map(
+                  (type) => html`<option value="${type.name}">${type.name}</option>`
+                )}
+              </select>
             `
           : this.selectedFilter === 'name'
           ? html`
-              <div class="input-group">
-                <label for="name-filter">Nombre:</label>
-                <input
-                  id="name-filter"
-                  type="text"
-                  placeholder="Buscar Pokémon..."
-                  @input="${this.handleValueChange}"
-                />
-              </div>
+              <label for="name-filter">Name:</label>
+              <input
+                id="name-filter"
+                type="text"
+                placeholder="Buscando Pokémon..."
+                @input="${this.handleValueChange}"
+              />
             `
           : this.selectedFilter === 'sort'
           ? html`
-              <div class="input-group">
-                <label for="sort-order">Orden:</label>
-                <select id="sort-order" @change="${this.handleSortChange}">
-                  <option value="asc">Ascendente</option>
-                  <option value="desc">Descendente</option>
-                </select>
-              </div>
+              <label for="sort-order">Orden:</label>
+              <select id="sort-order" @change="${this.handleSortChange}">
+                <option value="asc">Ascendente</option>
+                <option value="desc">Descendente</option>
+              </select>
             `
           : html``
         }
@@ -240,11 +260,26 @@ class PokemonComponent extends LitElement {
                 <pokemon-card
                   name="${pokemon.name}"
                   imageUrl="${pokemon.sprites.front_default}"
+                  @pokemon-click="${this.handlePokemonClick}"
                 ></pokemon-card>
               `
             )
           : html`<p>No se han encontrado Pokemones con los filtros actuales.</p>`}
       </div>
+
+      ${this.showModal ? html`
+        <div class="modal-overlay" @click="${this.closeModal}"></div>
+        <div class="modal">
+          <h3>Evoluciones de ${this.selectedPokemonName}</h3>
+          <ul>
+            ${this.selectedPokemonEvolutions.length > 0
+              ? this.selectedPokemonEvolutions.map(evolution => html`<li>${evolution}</li>`)
+              : html`<li>No se encontraron evoluciones.</li>`
+            }
+          </ul>
+          <button class="close-btn" @click="${this.closeModal}">Cerrar</button>
+        </div>
+      ` : ''}
     `;
   }
 }

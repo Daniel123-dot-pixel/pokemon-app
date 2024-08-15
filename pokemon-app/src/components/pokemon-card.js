@@ -51,9 +51,17 @@ class PokemonCard extends LitElement {
     this.imageUrl = '';
   }
 
+  handleClick() {
+    this.dispatchEvent(new CustomEvent('pokemon-click', {
+      detail: { name: this.name },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
   render() {
     return html`
-      <div class="card">
+      <div class="card" @click="${this.handleClick}">
         <img src="${this.imageUrl}" alt="${this.name}">
         <h2>${this.name}</h2>
       </div>
