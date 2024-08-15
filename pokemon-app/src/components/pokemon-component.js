@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import './pokemon-card.js'; // import de 
+import './pokemon-card.js'; 
 
 class PokemonComponent extends LitElement {
   static styles = css`
@@ -9,12 +9,64 @@ class PokemonComponent extends LitElement {
       justify-content: center;
     }
     .filter-controls {
-      text-align: center;
-      margin-bottom: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
     .filter-controls select, .filter-controls input {
-      padding: 8px;
+      padding: 10px 12px;
+      margin: 10px;
+      border-radius: 12px;
+      border: 2px solid #007bff;
+      background: linear-gradient(135deg, #ffffff 0%, #e9e9f0 100%);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      transition: box-shadow 0.3s ease, transform 0.3s ease;
+      font-size: 14px;
+      color: #333;
+    }
+    .filter-controls select:hover, .filter-controls input:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      transform: translateY(-3px);
+    }
+    .filter-controls select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23333" d="M2 0L0 2h4z"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 10px top 50%;
+      background-size: 10px;
+    }
+    .filter-controls select option {
+      background: linear-gradient(135deg, #ffffff 0%, #f0f0f5 100%);
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .filter-controls select option:hover {
+      background-color: #007bff;
+      color: #fff;
+    }
+    .filter-controls label {
       margin-right: 8px;
+      font-weight: 500;
+      color: #555;
+    }
+    .filter-controls select:focus, .filter-controls input:focus {
+      outline: none;
+      border-color: #0056b3;
+      box-shadow: 0 0 8px rgba(0, 86, 179, 0.5);
+    }
+    .filter-controls .input-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0 10px;
     }
   `;
 
@@ -53,15 +105,15 @@ class PokemonComponent extends LitElement {
       const data = await response.json();
       this.types = data.results;
     } catch (error) {
-      console.error('Error fetching Pokémon types:', error);
-      this.error = 'Failed to load Pokémon types.';
+      console.error('Error al buscar tipos de Pokemones:', error);
+      this.error = 'Error al cargar los tipos de Pokemones.';
     }
   }
 
   async fetchPokemons() {
     try {
       this.loading = true;
-      const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=151');
+      const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=152');
       const data = await response.json();
       
       const pokemonDetailsPromises = data.results.map(pokemon =>
@@ -72,8 +124,8 @@ class PokemonComponent extends LitElement {
       this.pokemons = pokemonDetails;
       this.applyFilters();
     } catch (error) {
-      console.error('Error fetching Pokémon list:', error);
-      this.error = 'Failed to load Pokémon list.';
+      console.error('Error al obtener la lista de Pokemones:', error);
+      this.error = 'Error al cargar la lista de Pokemones.';
     } finally {
       this.loading = false;
     }
@@ -129,41 +181,49 @@ class PokemonComponent extends LitElement {
   render() {
     return html`
       <div class="filter-controls">
-        <label for="filter-select">Filter:</label>
-        <select id="filter-select" @change="${this.handleFilterChange}">
-          <option value="">Select Filter</option>
-          <option value="type">Filter by Type</option>
-          <option value="name">Filter by Name</option>
-          <option value="sort">Sort Alphabetically</option>
-        </select>
+        <div class="input-group">
+          <label for="filter-select">Filtro:</label>
+          <select id="filter-select" @change="${this.handleFilterChange}">
+            <option value="">Seleccionar filtro</option>
+            <option value="type">Tipo</option>
+            <option value="name">Nombre</option>
+            <option value="sort">Alfabéticamente</option>
+          </select>
+        </div>
 
         ${this.selectedFilter === 'type'
           ? html`
-              <label for="type-filter">Type:</label>
-              <select id="type-filter" @change="${this.handleValueChange}">
-                <option value="">All Types</option>
-                ${this.types.map(
-                  (type) => html`<option value="${type.name}">${type.name}</option>`
-                )}
-              </select>
+              <div class="input-group">
+                <label for="type-filter">Tipo:</label>
+                <select id="type-filter" @change="${this.handleValueChange}">
+                  <option value="">Todos los Tipos</option>
+                  ${this.types.map(
+                    (type) => html`<option value="${type.name}">${type.name}</option>`
+                  )}
+                </select>
+              </div>
             `
           : this.selectedFilter === 'name'
           ? html`
-              <label for="name-filter">Name:</label>
-              <input
-                id="name-filter"
-                type="text"
-                placeholder="Search Pokémon..."
-                @input="${this.handleValueChange}"
-              />
+              <div class="input-group">
+                <label for="name-filter">Nombre:</label>
+                <input
+                  id="name-filter"
+                  type="text"
+                  placeholder="Buscar Pokémon..."
+                  @input="${this.handleValueChange}"
+                />
+              </div>
             `
           : this.selectedFilter === 'sort'
           ? html`
-              <label for="sort-order">Sort Order:</label>
-              <select id="sort-order" @change="${this.handleSortChange}">
-                <option value="asc">Ascending</option>
-                <option value="desc">Descending</option>
-              </select>
+              <div class="input-group">
+                <label for="sort-order">Orden:</label>
+                <select id="sort-order" @change="${this.handleSortChange}">
+                  <option value="asc">Ascendente</option>
+                  <option value="desc">Descendente</option>
+                </select>
+              </div>
             `
           : html``
         }
@@ -171,7 +231,7 @@ class PokemonComponent extends LitElement {
 
       <div class="pokemon-list">
         ${this.loading
-          ? html`<p>Loading Pokémon list...</p>`
+          ? html`<p>Cargando lista Pokémon...</p>`
           : this.error
           ? html`<p>${this.error}</p>`
           : this.filteredPokemons.length > 0
@@ -183,7 +243,7 @@ class PokemonComponent extends LitElement {
                 ></pokemon-card>
               `
             )
-          : html`<p>No Pokémon found with the current filters.</p>`}
+          : html`<p>No se han encontrado Pokemones con los filtros actuales.</p>`}
       </div>
     `;
   }

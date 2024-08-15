@@ -1,46 +1,63 @@
-//Componente que muestra nombre e imagen del pokemón
 import { LitElement, html, css } from 'lit';
 
 class PokemonCard extends LitElement {
   static styles = css`
-    .pokemon-card {
-      border: 1px solid #ccc;
-      padding: 16px;
-      margin: 16px;
-      border-radius: 8px;
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
       text-align: center;
-      background-color: #f7f7f7;
-      width: 150px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      max-width: 200px;
+      margin: 16px;
+      padding: 16px;
       cursor: pointer;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4ecf4 100%);
     }
-    .pokemon-image {
-      width: 100px;
-      height: 100px;
+    .card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .card img {
+      width: 120px;
+      height: 120px;
       object-fit: cover;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ffffff 0%, #d1e4f7 100%);
+      margin-bottom: 12px;
+      padding: 8px;
+    }
+    .card h2 {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+      margin: 0;
+      padding: 8px 0;
+      background: linear-gradient(135deg, #007bff, #00d4ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
   `;
 
   static properties = {
     name: { type: String },
     imageUrl: { type: String },
-    pokemonData: { type: Object },
   };
+
+  constructor() {
+    super();
+    this.name = '';
+    this.imageUrl = '';
+  }
 
   render() {
     return html`
-      <div class="pokemon-card" @click="${this._handleClick}">
-        <h3>${this.name}</h3>
-        <img
-          class="pokemon-image"
-          src="${this.imageUrl}"
-          alt="${this.name}"
-        />
+      <div class="card">
+        <img src="${this.imageUrl}" alt="${this.name}">
+        <h2>${this.name}</h2>
       </div>
     `;
-  }
-
-  _handleClick() {
-    this.dispatchEvent(new CustomEvent('pokemon-selected', { detail: this.pokemonData }));
   }
 }
 
