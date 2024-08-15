@@ -201,6 +201,21 @@ class PokemonComponent extends LitElement {
 
     return evolutions;
   }
+  handleFilterChange(event) {
+    this.selectedFilter = event.target.value;
+    this.applyFilters();
+  }
+  
+  handleValueChange(event) {
+    this.filterValue = event.target.value;
+    this.applyFilters();
+  }
+  
+  handleSortChange(event) {
+    this.sortOrder = event.target.value;
+    this.applyFilters();
+  }
+  
 
   closeModal() {
     this.showModal = false;
@@ -209,9 +224,9 @@ class PokemonComponent extends LitElement {
   render() {
     return html`
       <div class="filter-controls">
-        <label for="filter-select">Filter:</label>
+        <label for="filter-select">Filtros:</label>
         <select id="filter-select" @change="${this.handleFilterChange}">
-          <option value="">Select Filter</option>
+          <option value="">Selecciona un filtro</option>
           <option value="type">Tipo</option>
           <option value="name">Nombre</option>
           <option value="sort">Alfabéticamente</option>
@@ -229,11 +244,11 @@ class PokemonComponent extends LitElement {
             `
           : this.selectedFilter === 'name'
           ? html`
-              <label for="name-filter">Name:</label>
+              <label for="name-filter">Nombre:</label>
               <input
                 id="name-filter"
                 type="text"
-                placeholder="Buscando Pokémon..."
+                placeholder="Ingresa nombre..."
                 @input="${this.handleValueChange}"
               />
             `
