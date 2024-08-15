@@ -231,7 +231,7 @@ class PokemonComponent extends LitElement {
 
         ${this.selectedFilter === 'type'
           ? html`
-              <label for="type-filter">Type:</label>
+              <label for="type-filter">Tipo:</label>
               <select id="type-filter" @change="${this.handleValueChange}">
                 <option value="">Todos los Tipos</option>
                 ${this.types.map(
@@ -241,7 +241,7 @@ class PokemonComponent extends LitElement {
             `
           : this.selectedFilter === 'name'
           ? html`
-              <label for="name-filter">Name:</label>
+              <label for="name-filter">Nombre:</label>
               <input
                 id="name-filter"
                 type="text"
